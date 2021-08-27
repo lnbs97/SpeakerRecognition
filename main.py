@@ -66,7 +66,7 @@ SHUFFLE_SEED = 43
 
 # The sampling rate to use.
 # This is the one used in all of the audio samples.
-# We will resample all of the noise to this sampling rate.
+# We will resample all of the noise to this sampling rate.          WE WILL NOT DO THIS!
 # This will also be the output size of the audio wave samples
 # (since all samples are of 1 second long)
 SAMPLING_RATE = 16000
@@ -200,6 +200,7 @@ Resample all noise samples to 16000 Hz
 # )
 # os.system(command)
 
+
 # Split noise into chunks of 16,000 steps each
 def load_noise_sample(path):
     sample, sampling_rate = tf.audio.decode_wav(
@@ -300,6 +301,7 @@ for label, name in enumerate(class_names):
     audio_paths += speaker_sample_paths
     labels += [label] * len(speaker_sample_paths)
 
+
 print(
     "Found {} files belonging to {} classes.".format(len(audio_paths), len(class_names))
 )
@@ -384,7 +386,7 @@ def build_model(input_shape, num_classes):
 
 
 # model = build_model((SAMPLING_RATE // 2, 1), len(class_names))
-model = tf.keras.models.load_model('model.h5')
+model = tf.keras.models.load_model('Model/model.h5')
 
 model.summary()
 
@@ -396,7 +398,7 @@ model.compile(
 # Add callbacks:
 # 'EarlyStopping' to stop training when the model is not enhancing anymore
 # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-model_save_filename = "model.h5"
+model_save_filename = "Model/model.h5"
 
 earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
