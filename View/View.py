@@ -10,11 +10,11 @@ class View:
     def __init__(self):
         self.root = Tk()
         self.define_root()
+        self.controller = Controller()
         self.analyze_speaker_frame = self.create_analyze_speaker_frame()
         self.add_speaker_frame = self.create_add_speaker_frame()
         self.speakerlist_frame = self.create_speakerlist_frame()
         self.show_add_speaker_frame()
-        self.controller = Controller()
         self.root.mainloop()
 
     def define_root(self):
@@ -51,15 +51,24 @@ class View:
 
     def open_browse_window(self):
         input_audio = filedialog.askopenfilenames(parent=self.add_speaker_frame, title='Choose an audio file')
-        self.controller.compile_audio_file(input_audio)
-        # self.controller.predict_audio_file()
+        self.controller.input_audio = input_audio
+
+    def validate_speaker(self):
+        self.controller.validate_speaker()
+
+    def open_browse_window_folder(self):
+        folder = filedialog.askdirectory(parent=self.add_speaker_frame, title='Choose an audio file')
+        self.controller.folder = folder
+
+    def add_speaker(self):
+        self.controller.add_speaker()
 
     def create_add_speaker_frame(self):
         add_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
         label_top = Label(add_speaker_frame, text="add speaker")
         label_top.pack(pady=20)
 
-        btn_browse = Button(add_speaker_frame, text="browse", command=self.open_browse_window)
+        btn_browse = Button(add_speaker_frame, text="browse", command=self.open_browse_window_folder)
         btn_browse.pack(pady=10)
 
         input_fname = Entry(add_speaker_frame)
@@ -69,7 +78,7 @@ class View:
         input_lname.insert(0, "Enter the last name")
         input_lname.pack(pady=10)
 
-        btn_train = Button(add_speaker_frame, text="training")
+        btn_train = Button(add_speaker_frame, text="training", command=self.add_speaker)
         btn_train.pack(pady=10)
         return add_speaker_frame
 
@@ -79,7 +88,7 @@ class View:
         label_top.pack(pady=20)
         btn_browse = Button(analyze_speaker_frame, text="browse", command=self.open_browse_window)
         btn_browse.pack(pady=10)
-        btn_analyze = Button(analyze_speaker_frame, text="analyze")
+        btn_analyze = Button(analyze_speaker_frame, text="analyze", command=self.validate_speaker())
         btn_analyze.pack(pady=10)
         return analyze_speaker_frame
 
