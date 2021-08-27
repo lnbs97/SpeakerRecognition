@@ -12,14 +12,17 @@ class View:
         self.define_root()
         self.controller = Controller()
         self.analyze_speaker_frame = self.create_analyze_speaker_frame()
+        self.input_lname = None
+        self.input_fname = None
         self.add_speaker_frame = self.create_add_speaker_frame()
         self.speakerlist_frame = self.create_speakerlist_frame()
+
         self.show_add_speaker_frame()
         self.root.mainloop()
 
     def define_root(self):
         self.root.title('Speaker recognition')
-        self.root.iconbitmap('icon/test.ico')
+        #self.root.iconbitmap('C:/Studium/IntSys\abschlussprojekt\icon\test.ico')
         self.root.geometry("600x400")
         # create menu bar
         my_menu = Menu(self.root)
@@ -61,6 +64,8 @@ class View:
         self.controller.folder = folder
 
     def add_speaker(self):
+        self.controller.FIRST_NAME = self.input_fname.get()
+        self.controller.LAST_NAME = self.input_lname.get()
         self.controller.add_speaker()
 
     def create_add_speaker_frame(self):
@@ -71,12 +76,13 @@ class View:
         btn_browse = Button(add_speaker_frame, text="browse", command=self.open_browse_window_folder)
         btn_browse.pack(pady=10)
 
-        input_fname = Entry(add_speaker_frame)
-        input_fname.insert(0, "Enter the first name")
-        input_fname.pack(pady=10)
-        input_lname = Entry(add_speaker_frame)
-        input_lname.insert(0, "Enter the last name")
-        input_lname.pack(pady=10)
+        self.input_fname = Entry(add_speaker_frame)
+        self.input_fname.insert(0, "Enter the first name")
+        self.input_fname.pack(pady=10)
+
+        self.input_lname = Entry(add_speaker_frame)
+        self.input_lname.insert(0, "Enter the last name")
+        self.input_lname.pack(pady=10)
 
         btn_train = Button(add_speaker_frame, text="training", command=self.add_speaker)
         btn_train.pack(pady=10)
@@ -88,7 +94,7 @@ class View:
         label_top.pack(pady=20)
         btn_browse = Button(analyze_speaker_frame, text="browse", command=self.open_browse_window)
         btn_browse.pack(pady=10)
-        btn_analyze = Button(analyze_speaker_frame, text="analyze", command=self.validate_speaker())
+        btn_analyze = Button(analyze_speaker_frame, text="analyze", command=self.validate_speaker)
         btn_analyze.pack(pady=10)
         return analyze_speaker_frame
 

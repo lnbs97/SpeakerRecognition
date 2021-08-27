@@ -31,6 +31,8 @@ class Controller:
         self.DATASET_ROOT = os.path.join(os.path.expanduser("~"), "Downloads/16000_pcm_speeches")
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
+        self.FIRST_NAME = ""
+        self.LAST_NAME = ""
         self.DATASET_AUDIO_PATH = os.path.join(self.DATASET_ROOT, self.AUDIO_SUBFOLDER)
         self.DATASET_NOISE_PATH = os.path.join(self.DATASET_ROOT, self.NOISE_SUBFOLDER)
         # Percentage of samples to use for validation
@@ -43,7 +45,9 @@ class Controller:
         #      where prop = sample_amplitude / noise_amplitude
         self.SCALE = 0.5
         self.BATCH_SIZE = 128
+        self.EPOCHS = 100
         self.SAMPLES_TO_DISPLAY = 20
+        self.create_folder_structure()
 
     def validate_speaker(self):
         # If folder `audio`, does not exist, create it, otherwise do nothing
@@ -166,7 +170,7 @@ class Controller:
         valid_ds = valid_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
         # model = build_model((SAMPLING_RATE // 2, 1), len(class_names))
-        model = tf.keras.models.load_model('Model/model.h5')
+        model = tf.keras.models.load_model('C:/Studium/IntSys/abschlussprojekt/Model/model.h5')
 
         model.summary()
 
@@ -290,7 +294,7 @@ class Controller:
 
         return keras.models.Model(inputs=inputs, outputs=outputs)
 
-    def add_speaker(self):
+    def create_folder_structure(self):
         # If folder `audio`, does not exist, create it, otherwise do nothing
         if os.path.exists(self.DATASET_AUDIO_PATH) is False:
             os.makedirs(self.DATASET_AUDIO_PATH)
@@ -318,6 +322,11 @@ class Controller:
                         os.path.join(self.DATASET_ROOT, folder),
                         os.path.join(self.DATASET_AUDIO_PATH, folder),
                     )
+
+    def add_speaker(self):
+        # Copy speaker files to speaker directory
+        shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
+
         # Get the list of all noise files
         noise_paths = []
         for subdir in os.listdir(self.DATASET_NOISE_PATH):
@@ -410,9 +419,10 @@ class Controller:
         )
         valid_ds = valid_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
-        # model = build_model((SAMPLING_RATE // 2, 1), len(class_names))
-        model = tf.keras.models.load_model('../Model/model.h5')
+        model = self.build_model((self.SAMPLING_RATE // 2, 1), len(class_names))
+        # model = tf.keras.models.load_model('../Model/model.h5')
 
+        print("summary")
         model.summary()
 
         # Compile the model using Adam's default learning rate
@@ -429,7 +439,24 @@ class Controller:
             model_save_filename, monitor="val_accuracy", save_best_only=True
         )
 
+        """
+        ## Training
+        """
+        history = model.fit(
+            train_ds,
+            epochs=self.EPOCHS,
+            validation_data=valid_ds,
+            callbacks=[earlystopping_cb, mdlcheckpoint_cb],
+        )
+
+        """
+        ## Evaluation
+        """
         print(model.evaluate(valid_ds))
+
+        """
+        ## Demonstration
+        """
         test_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
         test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
