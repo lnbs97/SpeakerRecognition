@@ -11,8 +11,10 @@ class View:
         self.root = Tk()
         self.define_root()
         self.my_tree = None
+        self.output_text = None
         self.controller = Controller()
-        self.analyze_speaker_frame = self.create_analyze_speaker_frame()
+        self.analyze_speaker_frame = None
+        self.create_analyze_speaker_frame()
         self.input_lname = None
         self.input_fname = None
         self.add_speaker_frame = self.create_add_speaker_frame()
@@ -59,10 +61,10 @@ class View:
 
     def validate_speaker(self):
         predicted_speaker = self.controller.validate_speaker()
+        self.output_text.delete(1.0, END)
         text = "Progonstizierter Sprecher: " + predicted_speaker
-        output_text = Text(self.analyze_speaker_frame, height=10)
-        output_text.insert(1.0, text)
-        output_text.pack()
+        self.output_text.insert(1.0, text)
+        self.output_text.pack()
 
     def open_browse_window_folder(self):
         folder = filedialog.askdirectory(parent=self.add_speaker_frame, title='Choose an audio file')
@@ -94,14 +96,14 @@ class View:
         return add_speaker_frame
 
     def create_analyze_speaker_frame(self):
-        analyze_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
-        label_top = Label(analyze_speaker_frame, text="analyze speaker")
+        self.analyze_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
+        label_top = Label(self.analyze_speaker_frame, text="analyze speaker")
         label_top.pack(pady=20)
-        btn_browse = Button(analyze_speaker_frame, text="browse", command=self.open_browse_window_add_audio_path)
+        btn_browse = Button(self.analyze_speaker_frame, text="browse", command=self.open_browse_window_add_audio_path)
         btn_browse.pack(pady=10)
-        btn_analyze = Button(analyze_speaker_frame, text="analyze", command=self.validate_speaker)
+        btn_analyze = Button(self.analyze_speaker_frame, text="analyze", command=self.validate_speaker)
         btn_analyze.pack(pady=10)
-        return analyze_speaker_frame
+        self.output_text = Text(self.analyze_speaker_frame, height=10)
 
     def create_speakerlist_frame(self):
         speakerlist_frame = Frame(self.root, width=400, height=400, bg="white")
