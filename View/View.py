@@ -73,7 +73,11 @@ class View:
         self.controller.folder = folder
 
     def train_model(self):
+        self.output_text_add_speaker.delete(1.0, END)
+        self.output_text_add_speaker.insert(1.0, "Das Modell trainiert. Das kann einige Minuten dauern...")
         self.controller.train_model()
+        self.output_text_add_speaker.delete(1.0, END)
+        self.output_text_add_speaker.insert(1.0, "Das trainierte Modell steht zur Verfügung.")
 
     def add_speaker(self):
         self.output_text_add_speaker.delete(1.0, END)
@@ -86,6 +90,9 @@ class View:
             self.output_text_add_speaker.pack()
         except FileExistsError as arr:
             self.output_text_add_speaker.insert(1.0, arr)
+            self.output_text_add_speaker.pack()
+        except TypeError as arr:
+            self.output_text_add_speaker.insert(1.0, "Bitte einen Ordner auswählen.")
             self.output_text_add_speaker.pack()
 
     def create_add_speaker_frame(self):
