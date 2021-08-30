@@ -28,8 +28,8 @@ class Controller:
         self.input_audio_path = None
         self.folder = None
         self.noises = []
-        self.model = tf.keras.models.load_model('../Model/model.h5')
-        self.DATASET_ROOT = "../dataset"
+        self.model = tf.keras.models.load_model('model/model.h5')
+        self.DATASET_ROOT = "dataset"
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
         self.FIRST_NAME = ""
@@ -229,7 +229,7 @@ class Controller:
         # Add callbacks:
         # 'EarlyStopping' to stop training when the model is not enhancing anymore
         # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "../Model/model.h5"
+        model_save_filename = "../model/model.h5"
 
         earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
         mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
