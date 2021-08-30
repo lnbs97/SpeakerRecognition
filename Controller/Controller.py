@@ -28,8 +28,8 @@ class Controller:
         self.input_audio_path = None
         self.folder = None
         self.noises = []
-        self.model = tf.keras.models.load_model('../Model/model.h5')
-        self.DATASET_ROOT = os.path.join(os.path.expanduser("~"), "Downloads/16000_pcm_speeches")
+        self.model = tf.keras.models.load_model('Model/model.h5')
+        self.DATASET_ROOT = ""
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
         self.FIRST_NAME = ""
@@ -47,8 +47,6 @@ class Controller:
         self.SCALE = 0.5
         self.BATCH_SIZE = 128
         self.EPOCHS = 1
-        self.SAMPLES_TO_DISPLAY = 20
-        self.create_folder_structure()
         self.init_noise()
         self.class_names = []
         self.update_class_names()
@@ -148,35 +146,6 @@ class Controller:
 
         return keras.models.Model(inputs=inputs, outputs=outputs)
 
-    def create_folder_structure(self):
-        # If folder `audio`, does not exist, create it, otherwise do nothing
-        if os.path.exists(self.DATASET_AUDIO_PATH) is False:
-            os.makedirs(self.DATASET_AUDIO_PATH)
-
-        # If folder `noise`, does not exist, create it, otherwise do nothing
-        if os.path.exists(self.DATASET_NOISE_PATH) is False:
-            os.makedirs(self.DATASET_NOISE_PATH)
-
-        for folder in os.listdir(self.DATASET_ROOT):
-            if os.path.isdir(os.path.join(self.DATASET_ROOT, folder)):
-                if folder in [self.AUDIO_SUBFOLDER, self.NOISE_SUBFOLDER]:
-                    # If folder is `audio` or `noise`, do nothing
-                    continue
-                elif folder in ["other", "_background_noise_"]:
-                    # If folder is one of the folders that contains noise samples,
-                    # move it to the `noise` folder
-                    shutil.move(
-                        os.path.join(self.DATASET_ROOT, folder),
-                        os.path.join(self.DATASET_NOISE_PATH, folder),
-                    )
-                else:
-                    # Otherwise, it should be a speaker folder, then move it to
-                    # `audio` folder
-                    shutil.move(
-                        os.path.join(self.DATASET_ROOT, folder),
-                        os.path.join(self.DATASET_AUDIO_PATH, folder),
-                    )
-
     def add_speaker(self):
         # Copy speaker files to speaker directory
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
@@ -241,7 +210,7 @@ class Controller:
         )
         valid_ds = valid_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
-        model = self.build_model((self.SAMPLING_RATE // 2, 1), len(class_names))
+        model = self.build_model((self.SAMPLING_RATE // 2, 1), len(self.class_names))
 
         model.summary()
 
