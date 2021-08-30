@@ -12,12 +12,14 @@ class View:
         self.define_root()
         self.my_tree = None
         self.output_text = None
+        self.output_text_add_speaker = None
+        self.add_speaker_frame = None
         self.controller = Controller()
         self.analyze_speaker_frame = None
         self.create_analyze_speaker_frame()
         self.input_lname = None
         self.input_fname = None
-        self.add_speaker_frame = self.create_add_speaker_frame()
+        self.create_add_speaker_frame()
         self.speakerlist_frame = self.create_speakerlist_frame()
         self.show_add_speaker_frame()
         self.root.mainloop()
@@ -70,30 +72,44 @@ class View:
         folder = filedialog.askdirectory(parent=self.add_speaker_frame, title='Choose an audio file')
         self.controller.folder = folder
 
+    def train_model(self):
+        self.controller.train_model()
+
     def add_speaker(self):
-        self.controller.FIRST_NAME = self.input_fname.get()
-        self.controller.LAST_NAME = self.input_lname.get()
-        self.controller.add_speaker()
+        self.output_text_add_speaker.delete(1.0, END)
+        try:
+            self.controller.FIRST_NAME = self.input_fname.get()
+            self.controller.LAST_NAME = self.input_lname.get()
+            self.controller.add_speaker()
+            text = "Der Sprecher: " + self.input_fname.get() + " " + self.input_lname.get() + " wurde hinzugefügt."
+            self.output_text_add_speaker.insert(1.0, text)
+            self.output_text_add_speaker.pack()
+        except FileExistsError as arr:
+            self.output_text_add_speaker.insert(1.0, arr)
+            self.output_text_add_speaker.pack()
 
     def create_add_speaker_frame(self):
-        add_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
-        label_top = Label(add_speaker_frame, text="add speaker")
+        self.add_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
+        label_top = Label(self.add_speaker_frame, text="add speaker")
         label_top.pack(pady=20)
 
-        btn_browse = Button(add_speaker_frame, text="browse", command=self.open_browse_window_folder)
+        btn_browse = Button(self.add_speaker_frame, text="browse", command=self.open_browse_window_folder)
         btn_browse.pack(pady=10)
 
-        self.input_fname = Entry(add_speaker_frame)
+        self.input_fname = Entry(self.add_speaker_frame)
         self.input_fname.insert(0, "Enter the first name")
         self.input_fname.pack(pady=10)
 
-        self.input_lname = Entry(add_speaker_frame)
+        self.input_lname = Entry(self.add_speaker_frame)
         self.input_lname.insert(0, "Enter the last name")
         self.input_lname.pack(pady=10)
 
-        btn_train = Button(add_speaker_frame, text="training", command=self.add_speaker)
+        btn_add_speaker = Button(self.add_speaker_frame, text="add speaker", command=self.add_speaker)
+        btn_add_speaker.pack(pady=10)
+
+        btn_train = Button(self.add_speaker_frame, text="training", command=self.train_model)
         btn_train.pack(pady=10)
-        return add_speaker_frame
+        self.output_text_add_speaker = Text(self.add_speaker_frame, height=10)
 
     def create_analyze_speaker_frame(self):
         self.analyze_speaker_frame = Frame(self.root, width=400, height=400, bg="white")

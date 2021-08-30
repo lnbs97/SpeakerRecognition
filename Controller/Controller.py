@@ -150,6 +150,7 @@ class Controller:
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
         self.update_class_names()
 
+    def train_model(self):
         audio_paths = []
         labels = []
         for label, name in enumerate(self.class_names):
@@ -220,7 +221,7 @@ class Controller:
         # Add callbacks:
         # 'EarlyStopping' to stop training when the model is not enhancing anymore
         # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "../Model/model2.h5"
+        model_save_filename = "../Model/model.h5"
 
         earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
         mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
@@ -241,7 +242,6 @@ class Controller:
         ## Evaluation
         """
         print(model.evaluate(valid_ds))
-
 
     def init_noise(self):
         # Get the list of all noise files
