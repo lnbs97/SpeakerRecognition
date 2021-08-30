@@ -6,7 +6,6 @@ import tensorflow as tf
 from tensorflow import keras
 
 from pathlib import Path
-from IPython.display import display, Audio
 
 
 def audio_to_fft(audio):
@@ -71,7 +70,6 @@ class Controller:
             y_pred = self.model.predict(ffts)
             y_pred = np.argmax(y_pred, axis=-1)[[0]]
             # sd.play(audios[0, :, :].squeeze(), 16000)
-            # sd.stop()
             return class_names[y_pred[0]]
 
     # Split noise into chunks of 16,000 steps each
@@ -182,7 +180,6 @@ class Controller:
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
 
         # Get the list of audio file paths along with their corresponding labels
-
         class_names = os.listdir(self.DATASET_AUDIO_PATH)
         print("Our class names: {}".format(class_names, ))
 
@@ -246,9 +243,7 @@ class Controller:
         valid_ds = valid_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
         model = self.build_model((self.SAMPLING_RATE // 2, 1), len(class_names))
-        # model = tf.keras.models.load_model('../Model/model.h5')
 
-        print("summary")
         model.summary()
 
         # Compile the model using Adam's default learning rate
@@ -268,7 +263,7 @@ class Controller:
         """
         ## Training
         """
-        history = model.fit(
+        model.fit(
             train_ds,
             epochs=self.EPOCHS,
             validation_data=valid_ds,
@@ -280,39 +275,6 @@ class Controller:
         """
         print(model.evaluate(valid_ds))
 
-        """
-        ## Demonstration
-        """
-        test_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
-        test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
-            self.BATCH_SIZE
-        )
-
-        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, self.noises, scale=self.SCALE), y))
-
-        for audios, labels in test_ds.take(1):
-            # Get the signal FFT
-            ffts = audio_to_fft(audios)
-            # Predict
-            y_pred = model.predict(ffts)
-            # Take random samples
-            rnd = np.random.randint(0, self.BATCH_SIZE, self.SAMPLES_TO_DISPLAY)
-            audios = audios.numpy()[rnd, :, :]
-            labels = labels.numpy()[rnd]
-            y_pred = np.argmax(y_pred, axis=-1)[rnd]
-
-            for index in range(self.SAMPLES_TO_DISPLAY):
-                # For every sample, print the true and predicted label
-                # as well as run the voice with the noise
-                print(
-                    "Speaker:\33{} {}\33[0m\tPredicted:\33{} {}\33[0m".format(
-                        "[92m" if labels[index] == y_pred[index] else "[91m",
-                        class_names[labels[index]],
-                        "[92m" if labels[index] == y_pred[index] else "[91m",
-                        class_names[y_pred[index]],
-                    )
-                )
-                display(Audio(audios[index, :, :].squeeze(), rate=self.SAMPLING_RATE))
 
     def init_noise(self):
         # Get the list of all noise files
