@@ -28,6 +28,8 @@ class Controller:
     def __init__(self):
         self.input_audio_path = None
         self.folder = None
+        self.noises = []
+        self.model = tf.keras.models.load_model('../Model/model.h5')
         self.DATASET_ROOT = os.path.join(os.path.expanduser("~"), "Downloads/16000_pcm_speeches")
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
@@ -48,44 +50,25 @@ class Controller:
         self.EPOCHS = 1
         self.SAMPLES_TO_DISPLAY = 20
         self.create_folder_structure()
+        self.init_noise()
 
     def validate_speaker(self):
-        model = tf.keras.models.load_model('../Model/model.h5')
-
         # Get the list of audio file paths along with their corresponding labels
         class_names = os.listdir(self.DATASET_AUDIO_PATH)
         print("Our class names: {}".format(class_names, ))
-
-        # Get the list of all noise files
-        noise_paths = []
-        for subdir in os.listdir(self.DATASET_NOISE_PATH):
-            subdir_path = Path(self.DATASET_NOISE_PATH) / subdir
-            if os.path.isdir(subdir_path):
-                noise_paths += [
-                    os.path.join(subdir_path, filepath)
-                    for filepath in os.listdir(subdir_path)
-                    if filepath.endswith(".wav")
-                ]
-
-        noises = []
-        for path in noise_paths:
-            sample = self.load_noise_sample(path)
-            if sample:
-                noises.extend(sample)
-        noises = tf.stack(noises)
 
         test_ds = self.paths_and_labels_to_dataset([self.input_audio_path], [3])
         test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
         )
 
-        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, noises, scale=self.SCALE), y))
+        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, self.noises, scale=self.SCALE), y))
 
         for audios, labels in test_ds.take(1):
             # Get the signal FFT
             ffts = audio_to_fft(audios)
             # Predict
-            y_pred = model.predict(ffts)
+            y_pred = self.model.predict(ffts)
             y_pred = np.argmax(y_pred, axis=-1)[[0]]
             # sd.play(audios[0, :, :].squeeze(), 16000)
             # sd.stop()
@@ -198,34 +181,6 @@ class Controller:
         # Copy speaker files to speaker directory
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
 
-        # Get the list of all noise files
-        noise_paths = []
-        for subdir in os.listdir(self.DATASET_NOISE_PATH):
-            subdir_path = Path(self.DATASET_NOISE_PATH) / subdir
-            if os.path.isdir(subdir_path):
-                noise_paths += [
-                    os.path.join(subdir_path, filepath)
-                    for filepath in os.listdir(subdir_path)
-                    if filepath.endswith(".wav")
-                ]
-        print(
-            "Found {} files belonging to {} directories".format(
-                len(noise_paths), len(os.listdir(self.DATASET_NOISE_PATH))
-            )
-        )
-        noises = []
-        for path in noise_paths:
-            sample = self.load_noise_sample(path)
-            if sample:
-                noises.extend(sample)
-        noises = tf.stack(noises)
-
-        print(
-            "{} noise files were split into {} noise samples where each is {} sec. long".format(
-                len(noise_paths), noises.shape[0], noises.shape[1] // self.SAMPLING_RATE
-            )
-        )
-
         # Get the list of audio file paths along with their corresponding labels
 
         class_names = os.listdir(self.DATASET_AUDIO_PATH)
@@ -275,7 +230,7 @@ class Controller:
 
         # Add noise to the training set
         train_ds = train_ds.map(
-            lambda x, y: (self.add_noise(x, noises, scale=self.SCALE), y),
+            lambda x, y: (self.add_noise(x, self.noises, scale=self.SCALE), y),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
 
@@ -333,7 +288,7 @@ class Controller:
             self.BATCH_SIZE
         )
 
-        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, noises, scale=self.SCALE), y))
+        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, self.noises, scale=self.SCALE), y))
 
         for audios, labels in test_ds.take(1):
             # Get the signal FFT
@@ -359,3 +314,21 @@ class Controller:
                 )
                 display(Audio(audios[index, :, :].squeeze(), rate=self.SAMPLING_RATE))
 
+    def init_noise(self):
+        # Get the list of all noise files
+        noise_paths = []
+        for subdir in os.listdir(self.DATASET_NOISE_PATH):
+            subdir_path = Path(self.DATASET_NOISE_PATH) / subdir
+            if os.path.isdir(subdir_path):
+                noise_paths += [
+                    os.path.join(subdir_path, filepath)
+                    for filepath in os.listdir(subdir_path)
+                    if filepath.endswith(".wav")
+                ]
+
+        noises = []
+        for path in noise_paths:
+            sample = self.load_noise_sample(path)
+            if sample:
+                noises.extend(sample)
+        self.noises = tf.stack(noises)
