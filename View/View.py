@@ -102,7 +102,7 @@ class View:
         speakerlist_frame = Frame(self.root, width=400, height=400, bg="white")
         label_top = Label(speakerlist_frame, text="speakerlist")
         label_top.pack(pady=20)
-        # create Treeviw
+        # create Treeview
         my_tree = ttk.Treeview(speakerlist_frame)
         # define columns
         my_tree['columns'] = ('ID', 'Vorname', 'Nachname')

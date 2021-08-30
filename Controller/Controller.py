@@ -1,6 +1,10 @@
 import os
 import shutil
 import numpy as np
+import playsound as playsound
+from playsound import playsound
+
+import sounddevice as sd
 
 import tensorflow as tf
 from tensorflow import keras
@@ -26,7 +30,7 @@ def audio_to_fft(audio):
 
 class Controller:
     def __init__(self):
-        self.input_audio = None
+        self.input_audio_path = None
         self.folder = None
         self.DATASET_ROOT = os.path.join(os.path.expanduser("~"), "Downloads/16000_pcm_speeches")
         self.AUDIO_SUBFOLDER = "audio"
@@ -45,38 +49,17 @@ class Controller:
         #      where prop = sample_amplitude / noise_amplitude
         self.SCALE = 0.5
         self.BATCH_SIZE = 128
-        self.EPOCHS = 100
+        self.EPOCHS = 1
         self.SAMPLES_TO_DISPLAY = 20
         self.create_folder_structure()
 
     def validate_speaker(self):
-        # If folder `audio`, does not exist, create it, otherwise do nothing
-        if os.path.exists(self.DATASET_AUDIO_PATH) is False:
-            os.makedirs(self.DATASET_AUDIO_PATH)
+        model = tf.keras.models.load_model('../Model/model.h5')
 
-        # If folder `noise`, does not exist, create it, otherwise do nothing
-        if os.path.exists(self.DATASET_NOISE_PATH) is False:
-            os.makedirs(self.DATASET_NOISE_PATH)
+        # Get the list of audio file paths along with their corresponding labels
+        class_names = os.listdir(self.DATASET_AUDIO_PATH)
+        print("Our class names: {}".format(class_names, ))
 
-        for folder in os.listdir(self.DATASET_ROOT):
-            if os.path.isdir(os.path.join(self.DATASET_ROOT, folder)):
-                if folder in [self.AUDIO_SUBFOLDER, self.NOISE_SUBFOLDER]:
-                    # If folder is `audio` or `noise`, do nothing
-                    continue
-                elif folder in ["other", "_background_noise_"]:
-                    # If folder is one of the folders that contains noise samples,
-                    # move it to the `noise` folder
-                    shutil.move(
-                        os.path.join(self.DATASET_ROOT, folder),
-                        os.path.join(self.DATASET_NOISE_PATH, folder),
-                    )
-                else:
-                    # Otherwise, it should be a speaker folder, then move it to
-                    # `audio` folder
-                    shutil.move(
-                        os.path.join(self.DATASET_ROOT, folder),
-                        os.path.join(self.DATASET_AUDIO_PATH, folder),
-                    )
         # Get the list of all noise files
         noise_paths = []
         for subdir in os.listdir(self.DATASET_NOISE_PATH):
@@ -87,11 +70,7 @@ class Controller:
                     for filepath in os.listdir(subdir_path)
                     if filepath.endswith(".wav")
                 ]
-        print(
-            "Found {} files belonging to {} directories".format(
-                len(noise_paths), len(os.listdir(self.DATASET_NOISE_PATH))
-            )
-        )
+
         noises = []
         for path in noise_paths:
             sample = self.load_noise_sample(path)
@@ -99,97 +78,7 @@ class Controller:
                 noises.extend(sample)
         noises = tf.stack(noises)
 
-        print(
-            "{} noise files were split into {} noise samples where each is {} sec. long".format(
-                len(noise_paths), noises.shape[0], noises.shape[1] // self.SAMPLING_RATE
-            )
-        )
-
-        # Get the list of audio file paths along with their corresponding labels
-
-        class_names = os.listdir(self.DATASET_AUDIO_PATH)
-        print("Our class names: {}".format(class_names, ))
-
-        audio_paths = []
-        labels = []
-        for label, name in enumerate(class_names):
-            print("Processing speaker {}".format(name, ))
-            dir_path = Path(self.DATASET_AUDIO_PATH) / name
-            speaker_sample_paths = [
-                os.path.join(dir_path, filepath)
-                for filepath in os.listdir(dir_path)
-                if filepath.endswith(".wav")
-            ]
-            audio_paths += speaker_sample_paths
-            labels += [label] * len(speaker_sample_paths)
-
-        print(
-            "Found {} files belonging to {} classes.".format(len(audio_paths), len(class_names))
-        )
-
-        # Shuffle
-        rng = np.random.RandomState(self.SHUFFLE_SEED)
-        rng.shuffle(audio_paths)
-        rng = np.random.RandomState(self.SHUFFLE_SEED)
-        rng.shuffle(labels)
-
-        # Split into training and validation
-        num_val_samples = int(self.VALID_SPLIT * len(audio_paths))
-        print("Using {} files for training.".format(len(audio_paths) - num_val_samples))
-        train_audio_paths = audio_paths[:-num_val_samples]
-        train_labels = labels[:-num_val_samples]
-
-        print("Using {} files for validation.".format(num_val_samples))
-        valid_audio_paths = audio_paths[-num_val_samples:]
-        valid_labels = labels[-num_val_samples:]
-
-        # Create 2 datasets, one for training and the other for validation
-        train_ds = self.paths_and_labels_to_dataset(train_audio_paths, train_labels)
-        train_ds = train_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
-            self.BATCH_SIZE
-        )
-
-        valid_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
-        valid_ds = valid_ds.shuffle(buffer_size=32 * 8, seed=self.SHUFFLE_SEED).batch(32)
-
-        # Add noise to the training set
-        train_ds = train_ds.map(
-            lambda x, y: (self.add_noise(x, noises, scale=self.SCALE), y),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
-
-        # Transform audio wave to the frequency domain using `audio_to_fft`
-        train_ds = train_ds.map(
-            lambda x, y: (audio_to_fft(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
-        )
-        train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
-
-        valid_ds = valid_ds.map(
-            lambda x, y: (audio_to_fft(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
-        )
-        valid_ds = valid_ds.prefetch(tf.data.experimental.AUTOTUNE)
-
-        # model = build_model((SAMPLING_RATE // 2, 1), len(class_names))
-        model = tf.keras.models.load_model('C:/Studium/IntSys/abschlussprojekt/Model/model.h5')
-
-        model.summary()
-
-        # Compile the model using Adam's default learning rate
-        model.compile(
-            optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
-        )
-        # Add callbacks:
-        # 'EarlyStopping' to stop training when the model is not enhancing anymore
-        # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "../Model/model.h5"
-
-        earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
-        mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
-            model_save_filename, monitor="val_accuracy", save_best_only=True
-        )
-
-        print(model.evaluate(valid_ds))
-        test_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
+        test_ds = self.paths_and_labels_to_dataset([self.input_audio_path], [3])
         test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
         )
@@ -202,23 +91,24 @@ class Controller:
             # Predict
             y_pred = model.predict(ffts)
             # Take random samples
-            rnd = np.random.randint(0, self.BATCH_SIZE, self.SAMPLES_TO_DISPLAY)
+            rnd = np.random.randint(0, 1, self.SAMPLES_TO_DISPLAY)
             audios = audios.numpy()[rnd, :, :]
             labels = labels.numpy()[rnd]
             y_pred = np.argmax(y_pred, axis=-1)[rnd]
 
-            for index in range(self.SAMPLES_TO_DISPLAY):
-                # For every sample, print the true and predicted label
-                # as well as run the voice with the noise
-                print(
-                    "Speaker:\33{} {}\33[0m\tPredicted:\33{} {}\33[0m".format(
-                        "[92m" if labels[index] == y_pred[index] else "[91m",
-                        class_names[labels[index]],
-                        "[92m" if labels[index] == y_pred[index] else "[91m",
-                        class_names[y_pred[index]],
-                    )
+
+            # For every sample, print the true and predicted label
+            # as well as run the voice with the noise
+            print(
+                "Speaker:\33{} {}\33[0m\tPredicted:\33{} {}\33[0m".format(
+                    "[92m" if labels[0] == y_pred[0] else "[91m",
+                    class_names[labels[0]],
+                    "[92m" if labels[0] == y_pred[0] else "[91m",
+                    class_names[y_pred[0]],
                 )
-                display(Audio(audios[index, :, :].squeeze(), rate=self.SAMPLING_RATE))
+            )
+            sd.play(audios[0, :, :].squeeze(), 16000)
+            sd.stop()
 
     # Split noise into chunks of 16,000 steps each
     def load_noise_sample(self, path):
@@ -432,7 +322,7 @@ class Controller:
         # Add callbacks:
         # 'EarlyStopping' to stop training when the model is not enhancing anymore
         # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "../Model/model.h5"
+        model_save_filename = "../Model/model2.h5"
 
         earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
         mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
