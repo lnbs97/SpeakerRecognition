@@ -28,8 +28,8 @@ class Controller:
         self.input_audio_path = None
         self.folder = None
         self.noises = []
-        self.model = tf.keras.models.load_model('Model/model.h5')
-        self.DATASET_ROOT = "dataset"
+        self.model = tf.keras.models.load_model('../Model/model.h5')
+        self.DATASET_ROOT = "../dataset"
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
         self.FIRST_NAME = ""
@@ -46,7 +46,7 @@ class Controller:
         #      where prop = sample_amplitude / noise_amplitude
         self.SCALE = 0.5
         self.BATCH_SIZE = 128
-        self.EPOCHS = 1
+        self.EPOCHS = 100
         self.init_noise()
         self.class_names = []
         self.update_class_names()
@@ -110,6 +110,13 @@ class Controller:
 
         return audio
 
+    def paths_and_labels_to_dataset(self, audio_paths, labels):
+        """Constructs a dataset of audios and labels."""
+        path_ds = tf.data.Dataset.from_tensor_slices(audio_paths)
+        audio_ds = path_ds.map(lambda x: self.path_to_audio(x))
+        label_ds = tf.data.Dataset.from_tensor_slices(labels)
+        return tf.data.Dataset.zip((audio_ds, label_ds))
+
     def paths_to_dataset(self, audio_paths):
         """Constructs a dataset of audios"""
         path_ds = tf.data.Dataset.from_tensor_slices(audio_paths)
@@ -152,6 +159,8 @@ class Controller:
     def train_model(self):
         audio_paths = []
         labels = []
+        self.update_class_names()
+
         for label, name in enumerate(self.class_names):
             print("Processing speaker {}".format(name, ))
             dir_path = Path(self.DATASET_AUDIO_PATH) / name
@@ -184,12 +193,12 @@ class Controller:
         valid_labels = labels[-num_val_samples:]
 
         # Create 2 datasets, one for training and the other for validation
-        train_ds = self.paths_to_dataset(train_audio_paths, train_labels)
+        train_ds = self.paths_and_labels_to_dataset(train_audio_paths, train_labels)
         train_ds = train_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
         )
 
-        valid_ds = self.paths_to_dataset(valid_audio_paths, valid_labels)
+        valid_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
         valid_ds = valid_ds.shuffle(buffer_size=32 * 8, seed=self.SHUFFLE_SEED).batch(32)
 
         # Add noise to the training set
