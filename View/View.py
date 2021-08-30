@@ -52,9 +52,9 @@ class View:
         self.analyze_speaker_frame.pack_forget()
         self.speakerlist_frame.pack_forget()
 
-    def open_browse_window(self):
-        input_audio = filedialog.askopenfilenames(parent=self.add_speaker_frame, title='Choose an audio file')
-        self.controller.input_audio = input_audio
+    def open_browse_window_add_audio_path(self):
+        input_audio_path = filedialog.askopenfilenames(parent=self.add_speaker_frame, title='Choose an audio file')
+        self.controller.input_audio_path = input_audio_path[0]
 
     def validate_speaker(self):
         self.controller.validate_speaker()
@@ -92,7 +92,7 @@ class View:
         analyze_speaker_frame = Frame(self.root, width=400, height=400, bg="white")
         label_top = Label(analyze_speaker_frame, text="analyze speaker")
         label_top.pack(pady=20)
-        btn_browse = Button(analyze_speaker_frame, text="browse", command=self.open_browse_window)
+        btn_browse = Button(analyze_speaker_frame, text="browse", command=self.open_browse_window_add_audio_path)
         btn_browse.pack(pady=10)
         btn_analyze = Button(analyze_speaker_frame, text="analyze", command=self.validate_speaker)
         btn_analyze.pack(pady=10)
