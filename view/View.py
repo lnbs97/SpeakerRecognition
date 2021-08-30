@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
-from Controller.Controller import Controller
+from controller.Controller import Controller
 
 
 class View:
@@ -33,7 +33,7 @@ class View:
         self.root.config(menu=my_menu)
         # create menu
         options_menu = Menu(my_menu)
-        my_menu.add_cascade(label="options", menu=options_menu)
+        my_menu.add_cascade(label="menu", menu=options_menu)
         options_menu.add_command(label="add speaker", command=self.show_add_speaker_frame)
         options_menu.add_command(label="analyze speaker", command=self.show_analyze_speaker_frame)
         options_menu.add_command(label="speakerlist", command=self.show_speakerlist_frame)
@@ -91,7 +91,7 @@ class View:
         except FileExistsError as arr:
             self.output_text_add_speaker.insert(1.0, arr)
             self.output_text_add_speaker.pack()
-        except TypeError as arr:
+        except TypeError:
             self.output_text_add_speaker.insert(1.0, "Bitte einen Ordner auswählen.")
             self.output_text_add_speaker.pack()
 
