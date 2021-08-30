@@ -28,8 +28,8 @@ class Controller:
         self.input_audio_path = None
         self.folder = None
         self.noises = []
-        self.model = tf.keras.models.load_model('Model/model.h5')
-        self.DATASET_ROOT = ""
+        self.model = tf.keras.models.load_model('../Model/model.h5')
+        self.DATASET_ROOT = "../dataset"
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
         self.FIRST_NAME = ""
@@ -52,22 +52,22 @@ class Controller:
         self.update_class_names()
 
     def validate_speaker(self):
-        test_ds = self.paths_and_labels_to_dataset([self.input_audio_path], [3])
+        test_ds = self.paths_to_dataset([self.input_audio_path])
         test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
         )
 
-        test_ds = test_ds.map(lambda x, y: (self.add_noise(x, self.noises, scale=self.SCALE), y))
+        test_ds = test_ds.map(lambda x: (self.add_noise(x, self.noises, scale=self.SCALE)))
 
-        for audios, labels in test_ds.take(1):
-            # Get the signal FFT
-            ffts = audio_to_fft(audios)
-            # Predict
-            y_pred = self.model.predict(ffts)
-            y_pred = np.argmax(y_pred, axis=-1)[[0]]
-            # sd.play(audios[0, :, :].squeeze(), 16000)
-            # sd.stop()
-            return self.class_names[y_pred[0]]
+        audio = next(iter(test_ds.take(1)))
+        # Get the signal FFT
+        ffts = audio_to_fft(audio)
+        # Predict
+        y_pred = self.model.predict(ffts)
+        y_pred = np.argmax(y_pred, axis=-1)[[0]]
+        # sd.play(audios[0, :, :].squeeze(), 16000)
+        # sd.stop()
+        return self.class_names[y_pred[0]]
 
     # Split noise into chunks of 16,000 steps each
     def load_noise_sample(self, path):
@@ -110,12 +110,11 @@ class Controller:
 
         return audio
 
-    def paths_and_labels_to_dataset(self, audio_paths, labels):
-        """Constructs a dataset of audios and labels."""
+    def paths_to_dataset(self, audio_paths):
+        """Constructs a dataset of audios"""
         path_ds = tf.data.Dataset.from_tensor_slices(audio_paths)
         audio_ds = path_ds.map(lambda x: self.path_to_audio(x))
-        label_ds = tf.data.Dataset.from_tensor_slices(labels)
-        return tf.data.Dataset.zip((audio_ds, label_ds))
+        return audio_ds
 
     def residual_block(self, x, filters, conv_num=3, activation="relu"):
         # Shortcut
@@ -185,12 +184,12 @@ class Controller:
         valid_labels = labels[-num_val_samples:]
 
         # Create 2 datasets, one for training and the other for validation
-        train_ds = self.paths_and_labels_to_dataset(train_audio_paths, train_labels)
+        train_ds = self.paths_to_dataset(train_audio_paths, train_labels)
         train_ds = train_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
         )
 
-        valid_ds = self.paths_and_labels_to_dataset(valid_audio_paths, valid_labels)
+        valid_ds = self.paths_to_dataset(valid_audio_paths, valid_labels)
         valid_ds = valid_ds.shuffle(buffer_size=32 * 8, seed=self.SHUFFLE_SEED).batch(32)
 
         # Add noise to the training set
@@ -221,7 +220,7 @@ class Controller:
         # Add callbacks:
         # 'EarlyStopping' to stop training when the model is not enhancing anymore
         # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "../Model/model2.h5"
+        model_save_filename = "../Model/model.h5"
 
         earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
         mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
@@ -242,7 +241,6 @@ class Controller:
         ## Evaluation
         """
         print(model.evaluate(valid_ds))
-
 
     def init_noise(self):
         # Get the list of all noise files
