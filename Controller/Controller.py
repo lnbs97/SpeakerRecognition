@@ -1,10 +1,6 @@
 import os
 import shutil
 import numpy as np
-import playsound as playsound
-from playsound import playsound
-
-import sounddevice as sd
 
 import tensorflow as tf
 from tensorflow import keras
@@ -90,25 +86,10 @@ class Controller:
             ffts = audio_to_fft(audios)
             # Predict
             y_pred = model.predict(ffts)
-            # Take random samples
-            rnd = np.random.randint(0, 1, self.SAMPLES_TO_DISPLAY)
-            audios = audios.numpy()[rnd, :, :]
-            labels = labels.numpy()[rnd]
-            y_pred = np.argmax(y_pred, axis=-1)[rnd]
-
-
-            # For every sample, print the true and predicted label
-            # as well as run the voice with the noise
-            print(
-                "Speaker:\33{} {}\33[0m\tPredicted:\33{} {}\33[0m".format(
-                    "[92m" if labels[0] == y_pred[0] else "[91m",
-                    class_names[labels[0]],
-                    "[92m" if labels[0] == y_pred[0] else "[91m",
-                    class_names[y_pred[0]],
-                )
-            )
-            sd.play(audios[0, :, :].squeeze(), 16000)
-            sd.stop()
+            y_pred = np.argmax(y_pred, axis=-1)[[0]]
+            # sd.play(audios[0, :, :].squeeze(), 16000)
+            # sd.stop()
+            return class_names[y_pred[0]]
 
     # Split noise into chunks of 16,000 steps each
     def load_noise_sample(self, path):

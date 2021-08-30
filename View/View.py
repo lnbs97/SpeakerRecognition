@@ -57,7 +57,11 @@ class View:
         self.controller.input_audio_path = input_audio_path[0]
 
     def validate_speaker(self):
-        self.controller.validate_speaker()
+        predicted_speaker = self.controller.validate_speaker()
+        text = "Progonstizierter Sprecher: " + predicted_speaker
+        output_text = Text(self.analyze_speaker_frame, height=10)
+        output_text.insert(1.0, text)
+        output_text.pack()
 
     def open_browse_window_folder(self):
         folder = filedialog.askdirectory(parent=self.add_speaker_frame, title='Choose an audio file')
