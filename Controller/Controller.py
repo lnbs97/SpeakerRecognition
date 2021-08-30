@@ -50,12 +50,10 @@ class Controller:
         self.SAMPLES_TO_DISPLAY = 20
         self.create_folder_structure()
         self.init_noise()
+        self.class_names = []
+        self.update_class_names()
 
     def validate_speaker(self):
-        # Get the list of audio file paths along with their corresponding labels
-        class_names = os.listdir(self.DATASET_AUDIO_PATH)
-        print("Our class names: {}".format(class_names, ))
-
         test_ds = self.paths_and_labels_to_dataset([self.input_audio_path], [3])
         test_ds = test_ds.shuffle(buffer_size=self.BATCH_SIZE * 8, seed=self.SHUFFLE_SEED).batch(
             self.BATCH_SIZE
@@ -70,7 +68,8 @@ class Controller:
             y_pred = self.model.predict(ffts)
             y_pred = np.argmax(y_pred, axis=-1)[[0]]
             # sd.play(audios[0, :, :].squeeze(), 16000)
-            return class_names[y_pred[0]]
+            # sd.stop()
+            return self.class_names[y_pred[0]]
 
     # Split noise into chunks of 16,000 steps each
     def load_noise_sample(self, path):
@@ -85,6 +84,9 @@ class Controller:
         else:
             print("Sampling rate for {} is incorrect. Ignoring it".format(path))
             return None
+
+    def update_class_names(self):
+        self.class_names = os.listdir(self.DATASET_AUDIO_PATH)
 
     def path_to_audio(self, path):
         """Reads and decodes an audio file."""
@@ -178,14 +180,11 @@ class Controller:
     def add_speaker(self):
         # Copy speaker files to speaker directory
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
-
-        # Get the list of audio file paths along with their corresponding labels
-        class_names = os.listdir(self.DATASET_AUDIO_PATH)
-        print("Our class names: {}".format(class_names, ))
+        self.update_class_names()
 
         audio_paths = []
         labels = []
-        for label, name in enumerate(class_names):
+        for label, name in enumerate(self.class_names):
             print("Processing speaker {}".format(name, ))
             dir_path = Path(self.DATASET_AUDIO_PATH) / name
             speaker_sample_paths = [
@@ -197,7 +196,7 @@ class Controller:
             labels += [label] * len(speaker_sample_paths)
 
         print(
-            "Found {} files belonging to {} classes.".format(len(audio_paths), len(class_names))
+            "Found {} files belonging to {} classes.".format(len(audio_paths), len(self.class_names))
         )
 
         # Shuffle

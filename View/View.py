@@ -10,13 +10,13 @@ class View:
     def __init__(self):
         self.root = Tk()
         self.define_root()
+        self.my_tree = None
         self.controller = Controller()
         self.analyze_speaker_frame = self.create_analyze_speaker_frame()
         self.input_lname = None
         self.input_fname = None
         self.add_speaker_frame = self.create_add_speaker_frame()
         self.speakerlist_frame = self.create_speakerlist_frame()
-
         self.show_add_speaker_frame()
         self.root.mainloop()
 
@@ -40,6 +40,7 @@ class View:
         self.analyze_speaker_frame.pack(fill="both", expand=1)
 
     def show_speakerlist_frame(self):
+        self.get_speaker_list_data()
         self.hide_all_frames()
         self.speakerlist_frame.pack(fill="both", expand=1)
 
@@ -107,26 +108,32 @@ class View:
         label_top = Label(speakerlist_frame, text="speakerlist")
         label_top.pack(pady=20)
         # create Treeview
-        my_tree = ttk.Treeview(speakerlist_frame)
+        self.my_tree = ttk.Treeview(speakerlist_frame)
         # define columns
-        my_tree['columns'] = ('ID', 'Vorname', 'Nachname')
+        self.my_tree['columns'] = ('ID', 'Vorname', 'Nachname')
         # format columns
-        my_tree.column("#0", width=0, minwidth=25)
-        my_tree.column("ID", anchor=CENTER, width=80, minwidth=25)
-        my_tree.column("Vorname", anchor=W, width=120, minwidth=25)
-        my_tree.column("Nachname", anchor=W, width=120, minwidth=25)
-        my_tree.column("ID", anchor=CENTER, width=120, minwidth=25)
+        self.my_tree.column("#0", width=0, minwidth=25)
+        self.my_tree.column("ID", anchor=CENTER, width=80, minwidth=25)
+        self.my_tree.column("Vorname", anchor=W, width=120, minwidth=25)
+        self.my_tree.column("Nachname", anchor=W, width=120, minwidth=25)
+        self.my_tree.column("ID", anchor=CENTER, width=120, minwidth=25)
         # create headings
-        my_tree.heading("#0", text="", anchor=W)
-        my_tree.heading("ID", text="ID", anchor=CENTER)
-        my_tree.heading("Vorname", text="Vorname", anchor=W)
-        my_tree.heading("Nachname", text="Nachname", anchor=W)
+        self.my_tree.heading("#0", text="", anchor=W)
+        self.my_tree.heading("ID", text="ID", anchor=CENTER)
+        self.my_tree.heading("Vorname", text="Vorname", anchor=W)
+        self.my_tree.heading("Nachname", text="Nachname", anchor=W)
 
-        # add data
-        my_tree.insert(parent='', index='end', text="", values=(1, "Test", "Daten"))
-        my_tree.insert(parent='', index='end', text="", values=(2, "Jonas", "Feige"))
-        my_tree.pack(pady=20)
         return speakerlist_frame
+
+    def get_speaker_list_data(self):
+        for i in self.my_tree.get_children():
+            self.my_tree.delete(i)
+
+        names_list = self.controller.class_names
+        for index in range(len(names_list)):
+            splitted = names_list[index].split("_")
+            self.my_tree.insert(parent='', index='end', text="", values=(index, splitted[0], splitted[1]))
+            self.my_tree.pack(pady=20)
 
 
 if __name__ == '__main__':
