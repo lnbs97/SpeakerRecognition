@@ -148,7 +148,6 @@ class Controller:
     def add_speaker(self):
         # Copy speaker files to speaker directory
         shutil.copytree(self.folder, self.DATASET_AUDIO_PATH + '/' + self.FIRST_NAME + '_' + self.LAST_NAME)
-        self.update_class_names()
 
     def train_model(self):
         audio_paths = []
@@ -241,6 +240,7 @@ class Controller:
         """
         ## Evaluation
         """
+        self.update_class_names()
         print(model.evaluate(valid_ds))
 
     def init_noise(self):
