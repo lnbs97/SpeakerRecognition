@@ -2,6 +2,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
+from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
 from controller.Controller import Controller
 
 
@@ -72,9 +74,12 @@ class View:
         self.output_text_path.pack()
 
     def validate_speaker(self):
-        predicted_speaker = self.controller.validate_speaker()
         self.output_text.delete(1.0, END)
-        text = "Progonstizierter Sprecher: " + predicted_speaker
+        try:
+            predicted_speaker = self.controller.validate_speaker()
+            text = "Progonstizierter Sprecher: " + predicted_speaker
+        except InvalidArgumentError:
+            text = "Bitte eine waveform-Datei hinzufügen"
         self.output_text.insert(1.0, text)
         self.output_text.pack()
 
