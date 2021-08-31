@@ -12,6 +12,7 @@ class View:
         self.define_root()
         self.my_tree = None
         self.output_text = None
+        self.output_text_path = None
         self.output_text_add_speaker = None
         self.add_speaker_frame = None
         self.controller = Controller()
@@ -58,8 +59,17 @@ class View:
         self.speakerlist_frame.pack_forget()
 
     def open_browse_window_add_audio_path(self):
+        self.output_text_path.delete(1.0, END)
+        self.output_text.delete(1.0, END)
         input_audio_path = filedialog.askopenfilenames(parent=self.add_speaker_frame, title='Choose an audio file')
-        self.controller.input_audio_path = input_audio_path[0]
+        if input_audio_path != "":
+            self.controller.input_audio_path = input_audio_path[0]
+            text = "Dateipfad: " + input_audio_path[0]
+
+        else:
+            text = "Bitte eine Datei auswählen"
+        self.output_text_path.insert(1.0, text)
+        self.output_text_path.pack()
 
     def validate_speaker(self):
         predicted_speaker = self.controller.validate_speaker()
@@ -124,6 +134,7 @@ class View:
         label_top.pack(pady=20)
         btn_browse = Button(self.analyze_speaker_frame, text="browse", command=self.open_browse_window_add_audio_path)
         btn_browse.pack(pady=10)
+        self.output_text_path = Text(self.analyze_speaker_frame, height=10)
         btn_analyze = Button(self.analyze_speaker_frame, text="analyze", command=self.validate_speaker)
         btn_analyze.pack(pady=10)
         self.output_text = Text(self.analyze_speaker_frame, height=10)
