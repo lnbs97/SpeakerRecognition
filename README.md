@@ -1,6 +1,5 @@
 # SpeakerRecognition
-Speaker Recognition is a tool written in python with tensorflow that allows to detect a speaker in a one second sound clip with high accuracy.
-For detection it uses a Convoluted Neural Network (CNN).
+Speaker Recognition is a tool to detect a speaker in a one second sound clip with high accuracy using tensorflow and a Convoluted Neural Network (CNN).
 It comes with a pre-trained model for 6 speakers.
 
 Based on the keras Speaker Recognition example: https://keras.io/examples/audio/speaker_recognition_using_cnn/
