@@ -28,8 +28,8 @@ class Controller:
         self.input_audio_path = None
         self.folder = None
         self.noises = []
-        self.model = tf.keras.models.load_model('model/model - Kopie.h5')
-        self.DATASET_ROOT = "dataset"
+        self.model = tf.keras.models.load_model('../model/model.h5')
+        self.DATASET_ROOT = "../dataset"
         self.AUDIO_SUBFOLDER = "audio"
         self.NOISE_SUBFOLDER = "noise"
         self.FIRST_NAME = ""
@@ -52,7 +52,7 @@ class Controller:
         self.update_class_names()
 
     def validate_speaker(self):
-        self.model = tf.keras.models.load_model('model/model - Kopie.h5')
+        self.model = tf.keras.models.load_model('../model/model.h5')
         test_ds = self.paths_to_dataset([self.input_audio_path])
         test_ds = test_ds.batch(
             batch_size=1
@@ -60,12 +60,11 @@ class Controller:
         audio = next(iter(test_ds.take(1)))
         # Get the signal FFT
         ffts = audio_to_fft(audio)
+        print(ffts)
         # Predict
-        y_pred = self.model(ffts)
-        print(y_pred)
+        y_pred = self.model.predict(ffts)
         y_pred_index = np.argmax(y_pred, axis=-1)[[0]]
-        print(np.amax(y_pred, axis=-1))
-        if np.amax(y_pred, axis=-1) < 0.999:
+        if np.amax(y_pred, axis=-1) < 0.9:
             return "unbekannter Sprecher"
         else:
             return self.class_names[y_pred_index[0]]
@@ -230,7 +229,7 @@ class Controller:
         # Add callbacks:
         # 'EarlyStopping' to stop training when the model is not enhancing anymore
         # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-        model_save_filename = "model/model - Kopie.h5"
+        model_save_filename = "../model/model.h5"
 
         earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
         mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(

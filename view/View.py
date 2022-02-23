@@ -29,7 +29,7 @@ class View:
 
     def define_root(self):
         self.root.title('Speaker recognition')
-        #self.root.iconbitmap('C:/Studium/IntSys\abschlussprojekt\icon\test.ico')
+        self.root.iconbitmap('../icon/test.ico')
         self.root.geometry("600x400")
         # create menu bar
         my_menu = Menu(self.root)
